@@ -8,8 +8,8 @@
 
 struct camera_t
 {
-    void move(const glm::vec3& direction);
-    void rotate(const float angle);
+    void move(const glm::vec3& direction, const float rand_value = 0);
+    void rotate(const float angle, const float rand_value = 0);
 
     glm::vec4 eye;
     glm::vec4 centre;
