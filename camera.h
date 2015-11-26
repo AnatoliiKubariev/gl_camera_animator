@@ -2,11 +2,8 @@
 
 #include "stdafx.h"
 #include <glm.hpp>
-#include <mat4x4.hpp>
-#include <vec4.hpp>
 
-enum rotation_type{eye, centre};
-
+enum rotation_type{ eye, centre };
 struct camera_t
 {
     void move(const glm::vec3& direction);
