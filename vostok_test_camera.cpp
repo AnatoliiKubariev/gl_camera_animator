@@ -33,15 +33,28 @@ enum action_type{ stand, move, rotate };
 struct action
 {
     action() :act(stand){}
-    action(float angle) :act(rotate), angle(angle){}
+    action(float angle, const glm::vec3& axis, const rotation_type type) :act(rotate), angle(angle), axis(axis), type(type){}
     action(const glm::vec3& p) :act(move), angle(0), dest(p){}
     action_type act;
     glm::vec3 dest;
     float angle;
+    glm::vec3 axis;
+    rotation_type type;
 };
 using actions_t = std::list<action>;
-actions_t actions = { action(), action(objects[1]), action(), action(objects[2]), action(), action(180.f), action(objects[3])
-                    , action(), action(objects[4]), action(), action(objects[5]), action(),  action(180.f) };
+actions_t actions = { action(10.f, glm::vec3(1.f, 1.f, 1.f), rotation_type::eye), action(), action(-10.f, glm::vec3(1.f, 1.f, 1.f), rotation_type::eye)
+                    , action(objects[1])
+                    , action(-45.f, glm::vec3(1.f, 0.f, 0.f), rotation_type::eye), action(), action(45.f, glm::vec3(1.f, 0.f, 0.f), rotation_type::eye)
+                    , action(objects[2])
+                    , action(70.f, glm::vec3(0.f, 1.f, 0.f), rotation_type::eye), action(), action(-70.f, glm::vec3(0.f, 1.f, 0.f), rotation_type::eye)
+                    , action(-180.f, glm::vec3(0.f, 1.f, 0.f), rotation_type::centre)
+                    , action(50.f, glm::vec3(0.f, 0.f, 1.f), rotation_type::eye), action(), action(-50.f, glm::vec3(0.f, 0.f, 1.f), rotation_type::eye)
+                    , action(objects[4])
+                    , action(-30.f, glm::vec3(1.f, 1.f, 0.f), rotation_type::eye), action(), action(30.f, glm::vec3(1.f, 1.f, 0.f), rotation_type::eye)
+                    , action(objects[5])
+                    , action(-60.f, glm::vec3(0.f, 1.f, 1.f), rotation_type::eye), action(), action(60.f, glm::vec3(0.f, 1.f, 1.f), rotation_type::eye)
+                    , action(-180.f, glm::vec3(0.f, 1.f, 0.f), rotation_type::centre)   
+                   };
 
 actions_t::iterator next_action(actions_t& actions, actions_t::iterator ait)
 {
@@ -66,9 +79,6 @@ camera_t camera = { glm::vec4(0.f, 8.f, 0.f, 1.f)
                   , glm::vec4(0.f, 0.f, 0.f, 1.f) 
                   , 0.f};
 
-float rand_values[6] = { -0.02f, 0.07f, -0.03f, -0.04f, -0.02f, 0.04f };
-size_t values_num = 0;
-
 
 bool camera_move(camera_t& camera, const glm::vec3& next_point)
 {
@@ -80,35 +90,28 @@ bool camera_move(camera_t& camera, const glm::vec3& next_point)
     direction.z /= dir_length;
 
     if (fabs(next_point.x - camera.centre.x) < direction.x * speed)
-    {
-        if (values_num == 5)
-            values_num = 0;
-        values_num++;
         return true;
-    }
 
-    camera.move(direction * speed, rand_values[values_num]);
+    camera.move(direction * speed);
 
     return false;
 }
 
-bool camera_rotate(camera_t& camera, float rotation_angle)
+bool camera_rotate(camera_t& camera, float rotation_angle, const glm::vec3& axis, const rotation_type rotate)
 {
     const float inc = rotation_angle > 0 ? 1.f : -1.f;
-    if (camera.z_angle == rotation_angle)
+    if (camera.angle == rotation_angle)
     {
-        if (values_num == 5)
-            values_num = 0;
-        camera.z_angle = 0.f;
+        camera.angle = 0.f;
         return true;
     }
 
     const float angle = inc / 180 * 3.1415;
 
-    camera.rotate(angle, rand_values[values_num]);
+    camera.rotate(angle, axis, rotate);
     //camera.center.x = cos(angle) * (camera.center.x - camera.eye.x) + sin(angle) * (camera.center.z - camera.eye.z) + camera.eye.x;
     //camera.center.z = cos(angle) * (camera.center.z - camera.eye.z) - sin(angle) * (camera.center.x - camera.eye.x) + camera.eye.z;
-    camera.z_angle += inc;
+    camera.angle += inc;
     return false;
 }
 
@@ -135,7 +138,7 @@ void display(void)
             cur_action = next_action(actions, cur_action);
         break;
     case rotate:
-        if(camera_rotate(camera, cur_action->angle))
+        if (camera_rotate(camera, cur_action->angle, cur_action->axis, cur_action->type))
             cur_action = next_action(actions, cur_action);
         break;
     }

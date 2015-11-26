@@ -5,17 +5,16 @@
 #include <mat4x4.hpp>
 #include <vec4.hpp>
 
+enum rotation_type{eye, centre};
 
 struct camera_t
 {
-    void move(const glm::vec3& direction, const float rand_value = 0);
-    void rotate(const float angle, const float rand_value = 0);
+    void move(const glm::vec3& direction);
+    void rotate(const float angle, const glm::vec3& axis, const rotation_type type);
 
     glm::vec4 eye;
     glm::vec4 centre;
     glm::vec4 up;
     
-    //float x_angle;
-    //float y_angle;
-    float z_angle;
+    float angle;
 };
