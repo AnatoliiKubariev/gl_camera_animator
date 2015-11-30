@@ -28,7 +28,7 @@ std::vector<glm::vec3> objects
     { 0.0f, 0.0f, 4.0f }
 };
 
-std::vector<cubic_t> calculate_cubic_pline(size_t n, const std::vector<glm::vec3>& v)
+const std::vector<cubic_t> calculate_cubic_spline(const size_t n, const std::vector<glm::vec3>& v)
 {
     std::vector<glm::vec3> gamma(n + 1);
     std::vector<glm::vec3> delta(n + 1);
@@ -71,36 +71,67 @@ std::vector<cubic_t> calculate_cubic_pline(size_t n, const std::vector<glm::vec3
     return c;
 }
 
-std::vector<camera_t> build_path(std::vector<camera_t> key_frames, const size_t path_step)
+enum interpolation_type{ line, cubic };
+
+std::vector<camera_t> build_path(const std::vector<camera_t> key_frames, const size_t path_step, const interpolation_type type)
 {
-    std::vector<glm::vec3> eyes(key_frames.size());
-    std::vector<glm::vec3> centres(key_frames.size());
-    std::vector<glm::vec3> ups(key_frames.size());
-
-    for (size_t i = 0; i < key_frames.size(); ++i)
-    {
-        eyes[i] = (key_frames[i].eye);
-        centres[i] = (key_frames[i].centre);
-        ups[i] = (key_frames[i].up);
-
-    }
-
-    std::vector<cubic_t> eye_cubic = calculate_cubic_pline(key_frames.size() - 1, eyes);
-    std::vector<cubic_t> centre_cubic = calculate_cubic_pline(key_frames.size() - 1, centres);
-    std::vector<cubic_t> up_cubic = calculate_cubic_pline(key_frames.size() - 1, ups);
-
     std::vector<camera_t> path;
-    for (size_t i = 0; i < key_frames.size() - 1; ++i)
+    if (type == line)
     {
-        for (size_t j = 0; j < path_step; ++j)
+        for (size_t i = 0; i < key_frames.size() - 1; ++i)
         {
-            float k = static_cast<float>(j) / static_cast<float>(path_step - 1);
+            for (size_t j = 0; j < path_step; ++j)
+            {
+                //eye
+                glm::vec3 diff = key_frames[i + 1].eye - key_frames[i].eye;
+                diff *= static_cast<float>(j) / static_cast<float>(path_step);
+                glm::vec3 eye = key_frames[i].eye + diff;
 
-            glm::vec3 eye = eye_cubic[i].get_point_on_spline(k);
-            glm::vec3 centre = centre_cubic[i].get_point_on_spline(k);
-            glm::vec3 up = up_cubic[i].get_point_on_spline(k);
+                //centre
+                diff = key_frames[i + 1].centre - key_frames[i].centre;
+                diff *= static_cast<float>(j) / static_cast<float>(path_step);
+                glm::vec3 centre = key_frames[i].centre + diff;
 
-            path.push_back({ eye, centre, up });
+                //up
+                diff = key_frames[i + 1].up - key_frames[i].up;
+                diff *= static_cast<float>(j) / static_cast<float>(path_step);
+                glm::vec3 up = key_frames[i].up + diff;
+
+                path.push_back({ eye, centre, up });
+            }
+        }
+    }
+    else
+    if (type == cubic)
+    {
+        std::vector<glm::vec3> eyes(key_frames.size());
+        std::vector<glm::vec3> centres(key_frames.size());
+        std::vector<glm::vec3> ups(key_frames.size());
+
+        for (size_t i = 0; i < key_frames.size(); ++i)
+        {
+            eyes[i] = (key_frames[i].eye);
+            centres[i] = (key_frames[i].centre);
+            ups[i] = (key_frames[i].up);
+
+        }
+
+        const std::vector<cubic_t> eye_cubic = calculate_cubic_spline(key_frames.size() - 1, eyes);
+        const std::vector<cubic_t> centre_cubic = calculate_cubic_spline(key_frames.size() - 1, centres);
+        const std::vector<cubic_t> up_cubic = calculate_cubic_spline(key_frames.size() - 1, ups);
+
+        for (size_t i = 0; i < key_frames.size() - 1; ++i)
+        {
+            for (size_t j = 0; j < path_step; ++j)
+            {
+                float k = static_cast<float>(j) / static_cast<float>(path_step - 1);
+
+                const glm::vec3 eye = eye_cubic[i].get_point_on_spline(k);
+                const glm::vec3 centre = centre_cubic[i].get_point_on_spline(k);
+                const glm::vec3 up = up_cubic[i].get_point_on_spline(k);
+
+                path.push_back({ eye, centre, up });
+            }
         }
     }
     return path;
@@ -120,8 +151,9 @@ std::vector<camera_t> key_frames =
 , { glm::vec3(0.f, 8.f, 0.f), glm::vec3(3.f, 0.f, 0.f), glm::vec3(0.f, 1.f, 0.f) }
 , { glm::vec3(0.f, 5.f, 0.f), glm::vec3(0.f, 0.f, -4.f), glm::vec3(0.f, 1.f, 0.f) } };
 
+interpolation_type type = cubic;
 const size_t path_step = 200;
-const std::vector<camera_t> path = build_path(key_frames, path_step);
+const std::vector<camera_t> path = build_path(key_frames, path_step, type);
 size_t step = 0;
 
 size_t key_step = 0;
