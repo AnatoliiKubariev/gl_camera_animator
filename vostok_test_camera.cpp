@@ -1,4 +1,3 @@
-
 #include "stdafx.h"
 #include "camera.h"
 #include "actions.h"
@@ -29,63 +28,51 @@ std::vector<glm::vec3> objects
     { 0.0f, 0.0f, 4.0f }
 };
 
-size_t camera_location = 0;
-camera_t camera = { glm::vec4(0.f, 8.f, 0.f, 1.f)
-, glm::vec4(objects[0].x, objects[0].y, objects[0].z, 1.f)
-, glm::vec4(0.f, 1.f, 0.f, 0.f)
-, 0.f };
-
-const glm::vec3 ox(1.f, 0.f, 0.f);
-const glm::vec3 oy(0.f, 1.f, 0.f);
-const glm::vec3 oz(0.f, 0.f, 1.f);
-const glm::vec3 xy(1.f, 1.f, 0.f);
-const glm::vec3 xz(1.f, 0.f, 1.f);
-const glm::vec3 yz(0.f, 1.f, 1.f);
-const glm::vec3 xyz(1.f, 1.f, 1.f);
-
-using actions_t = std::vector<std::unique_ptr<camera_action_t>>;
-actions_t generate_action()
+std::vector<camera_t> build_path(std::vector<camera_t> key_frames, const size_t path_step)
 {
-    actions_t actions;
+    std::vector<camera_t> path;
+    for (size_t i = 0; i < key_frames.size() - 1; ++i)
+    {
+        for (size_t j = 0; j < path_step; ++j)
+        {
+            //eye
+            glm::vec3 diff = key_frames[i + 1].eye - key_frames[i].eye;
+            diff *= static_cast<float>(j) / static_cast<float>(path_step);
+            glm::vec3 eye = key_frames[i].eye + diff;
 
-    actions.push_back(std::make_unique<rotate_t>(camera, 10.f, xyz, rotation_type::eye));
-    actions.push_back(std::make_unique<stand_t>());
-    actions.push_back(std::make_unique<rotate_t>(camera, -10.f, xyz, rotation_type::eye));
-    actions.push_back(std::make_unique<move_t>(camera, objects[1]));
-    actions.push_back(std::make_unique<rotate_t>(camera, -45.f, ox, rotation_type::eye));
-    actions.push_back(std::make_unique<stand_t>());
-    actions.push_back(std::make_unique<rotate_t>(camera, 45.f, ox, rotation_type::eye));
-    actions.push_back(std::make_unique<move_t>(camera, objects[2]));
-    actions.push_back(std::make_unique<rotate_t>(camera, 70.f, oy, rotation_type::eye));
-    actions.push_back(std::make_unique<stand_t>());
-    actions.push_back(std::make_unique<rotate_t>(camera, -70.f, oy, rotation_type::eye));
-    actions.push_back(std::make_unique<rotate_t>(camera, -180.f, oy, rotation_type::centre));
-    actions.push_back(std::make_unique<rotate_t>(camera, 50.f, oz, rotation_type::eye));
-    actions.push_back(std::make_unique<stand_t>());
-    actions.push_back(std::make_unique<rotate_t>(camera, -50.f, oz, rotation_type::eye));
-    actions.push_back(std::make_unique<move_t>(camera, objects[4]));
-    actions.push_back(std::make_unique<rotate_t>(camera, -30.f, xy, rotation_type::eye));
-    actions.push_back(std::make_unique<stand_t>());
-    actions.push_back(std::make_unique<rotate_t>(camera, 30.f, xy, rotation_type::eye));
-    actions.push_back(std::make_unique<move_t>(camera, objects[5]));
-    actions.push_back(std::make_unique<rotate_t>(camera, -60.f, yz, rotation_type::eye));
-    actions.push_back(std::make_unique<stand_t>());
-    actions.push_back(std::make_unique<rotate_t>(camera, 60.f, yz, rotation_type::eye));
-    actions.push_back(std::make_unique<rotate_t>(camera, -180.f, oy, rotation_type::centre));
+            //centre
+            diff = key_frames[i + 1].centre - key_frames[i].centre;
+            diff *= static_cast<float>(j) / static_cast<float>(path_step);
+            glm::vec3 centre = key_frames[i].centre + diff;
 
-    return actions;
+            //up
+            diff = key_frames[i + 1].up - key_frames[i].up;
+            diff *= static_cast<float>(j) / static_cast<float>(path_step);
+            glm::vec3 up = key_frames[i].up + diff;
+
+            path.push_back({ eye, centre, up });
+        }
+    }
+    return path;
 }
 
+std::vector<camera_t> key_frames =
+{ { glm::vec3(0.f, 8.f, 0.f), glm::vec3(0.f, 0.f, -4.f), glm::vec3(0.f, 1.f, 0.f) }
+, { glm::vec3(4.f, 8.f, 0.f), glm::vec3(4.f, 0.f, -4.f), glm::vec3(0.f, 1.f, 0.f) }
+, { glm::vec3(8.f, 8.f, 0.f), glm::vec3(8.f, 0.f, -4.f), glm::vec3(0.f, 1.f, 0.f) }
 
-actions_t actions = generate_action();
-actions_t::iterator cur_action = actions.begin();
-actions_t::iterator next_action(actions_t& actions, actions_t::iterator ait)
-{
-    ++ait;
-    if (ait == actions.end())
-        return actions.begin();
-    return ait;
-}
+, { glm::vec3(8.f, 8.f, 0.f), glm::vec3(12.f, 0.f, 0.f), glm::vec3(0.f, 1.f, 0.f) }
+
+, { glm::vec3(8.f, 8.f, 0.f), glm::vec3(8.f, 0.f, 4.f), glm::vec3(0.f, 1.f, 0.f) }
+, { glm::vec3(4.f, 8.f, 0.f), glm::vec3(4.f, 0.f, 4.f), glm::vec3(0.f, 1.f, 0.f) }
+, { glm::vec3(0.f, 8.f, 0.f), glm::vec3(0.f, 0.f, 4.f), glm::vec3(0.f, 1.f, 0.f) }
+
+, { glm::vec3(0.f, 8.f, 0.f), glm::vec3(-4.f, 0.f, 0.f), glm::vec3(0.f, 1.f, 0.f) }
+, { glm::vec3(0.f, 8.f, 0.f), glm::vec3(0.f, 0.f, -4.f), glm::vec3(0.f, 1.f, 0.f) } };
+
+const size_t path_step = 100;
+const std::vector<camera_t> path = build_path(key_frames, path_step);
+size_t step = 0;
 
 
 void draw_object(const glm::vec3& eye, const std::vector<float>& colors)
@@ -103,15 +90,15 @@ void display(void)
 
     glLoadIdentity();
 
-    if (cur_action->get()->event())
-        cur_action = next_action(actions, cur_action);
-
     gluLookAt
-        (camera.eye.x, camera.eye.y, camera.eye.z
-        , camera.centre.x, camera.centre.y, camera.centre.z
-        , camera.up.x, camera.up.y, camera.up.z);
+        (path[step].eye.x, path[step].eye.y, path[step].eye.z
+        , path[step].centre.x, path[step].centre.y, path[step].centre.z
+        , path[step].up.x, path[step].up.y, path[step].up.z);
+    ++step;
 
-    //draw objects
+    if (step >= path.size())
+        step = 0;
+
     for (size_t i = 0; i < objects.size(); ++i)
     {
         draw_object(objects[i], colors[i]);
@@ -124,7 +111,6 @@ void display(void)
 
 void button_event(unsigned char key, int x, int y)
 {
-    cur_action->get()->button_event(key);
 }
 
 void resize(int width, int height)
@@ -140,31 +126,28 @@ void resize(int width, int height)
     glLoadIdentity();
 }
 
-const GLfloat light_ambient[] = { 0.0f, 0.0f, 0.0f, 1.0f };
-const GLfloat light_diffuse[] = { 1.0f, 1.0f, 1.0f, 1.0f };
-const GLfloat light_specular[] = { 1.0f, 1.0f, 1.0f, 1.0f };
-const GLfloat light_position[] = { 2.0f, 5.0f, 5.0f, 0.0f };
-
-const GLfloat mat_ambient[] = { 0.7f, 0.7f, 0.7f, 1.0f };
-const GLfloat mat_diffuse[] = { 0.8f, 0.8f, 0.8f, 1.0f };
-const GLfloat mat_specular[] = { 1.0f, 1.0f, 1.0f, 1.0f };
-const GLfloat high_shininess[] = { 100.0f };
-
-// Program entry point /
-
 int main(int argc, char *argv[])
 {
+    const GLfloat light_ambient[] = { 0.0f, 0.0f, 0.0f, 1.0f };
+    const GLfloat light_diffuse[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+    const GLfloat light_specular[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+    const GLfloat light_position[] = { 2.0f, 5.0f, 5.0f, 0.0f };
+
+    const GLfloat mat_ambient[] = { 0.7f, 0.7f, 0.7f, 1.0f };
+    const GLfloat mat_diffuse[] = { 0.8f, 0.8f, 0.8f, 1.0f };
+    const GLfloat mat_specular[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+    const GLfloat high_shininess[] = { 100.0f };
+
     glutInit(&argc, argv);
     glutInitWindowSize(640, 480);
     glutInitWindowPosition(10, 10);
     glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE | GLUT_DEPTH);
 
-    glutCreateWindow("Name");
+    glutCreateWindow("Teapots invasion: press any key to move camera");
 
     glutReshapeFunc(resize);
     glutDisplayFunc(display);
     glutKeyboardFunc(button_event);
-    //glutMouseFunc(my_func);
 
     glClearColor(0, 0, 0, 0);
     glEnable(GL_CULL_FACE);
@@ -189,10 +172,6 @@ int main(int argc, char *argv[])
     glMaterialfv(GL_FRONT, GL_SHININESS, high_shininess);
 
     glutMainLoop();
-    //while (true)
-    //{
-    //    glutMainLoop();
-    //}
 
     return EXIT_SUCCESS;
 }
