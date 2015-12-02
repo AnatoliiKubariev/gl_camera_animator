@@ -1,12 +1,13 @@
 #include "stdafx.h"
-#include "camera.h"
-#include "cubic.h"
-#include <windows.h>
-#include <stdlib.h>
+#include "path.h"
+#include "key_frame.h"
 #include <glut.h>
+#include <gtx\matrix_interpolation.hpp>
 #include <vector>
-#include <list>
-#include <memory>
+
+glm::mat4 interpolate(const glm::mat4 const& n, const glm::mat4 const& n1, const float diff);
+glm::mat4 look_at(const glm::vec3& eye, const glm::vec3& centre, const glm::vec3& up);
+glm::mat4 perspective(const float fovx, const float aspect, const float z_far, const float z_near);
 
 std::vector<std::vector<float>> colors
 {
@@ -28,29 +29,17 @@ std::vector<glm::vec3> objects
     { 0.0f, 0.0f, 4.0f }
 };
 
-std::vector<camera_t> build_linear_path(const std::vector<camera_t>& key_frames, const size_t path_step)
+path_t build_linear_path(const std::vector<key_frame_t>& key_frames, const size_t path_step)
 {
-    std::vector<camera_t> path;
+    path_t path;
     for (size_t i = 0; i < key_frames.size() - 1; ++i)
     {
-        for (size_t j = 0; j < path_step; ++j)
+        glm::mat4 n = look_at(key_frames[i].eye, key_frames[i].centre, key_frames[i].up);
+        glm::mat4 n1 = look_at(key_frames[i + 1].eye, key_frames[i + 1].centre, key_frames[i + 1].up);
+
+        for (float j = 0; j < 1; j += 1.f / path_step)
         {
-            //eye
-            glm::vec3 diff = key_frames[i + 1].eye - key_frames[i].eye;
-            diff *= static_cast<float>(j) / static_cast<float>(path_step);
-            glm::vec3 eye = key_frames[i].eye + diff;
-
-            //centre
-            diff = key_frames[i + 1].centre - key_frames[i].centre;
-            diff *= static_cast<float>(j) / static_cast<float>(path_step);
-            glm::vec3 centre = key_frames[i].centre + diff;
-
-            //up
-            diff = key_frames[i + 1].up - key_frames[i].up;
-            diff *= static_cast<float>(j) / static_cast<float>(path_step);
-            glm::vec3 up = key_frames[i].up + diff;
-
-            path.push_back({ eye, centre, up });
+            path.view_matrix.push_back(interpolate(n, n1, j));
         }
     }
     return path;
@@ -58,34 +47,34 @@ std::vector<camera_t> build_linear_path(const std::vector<camera_t>& key_frames,
 
 enum intertolation_type { linear, cubic };
 
-std::vector<camera_t> build_path(intertolation_type type, const std::vector<camera_t>& key_frames, const size_t path_step)
+path_t build_path(intertolation_type type, const std::vector<key_frame_t>& key_frames, const size_t path_step)
 {
     switch (type)
     {
     case linear:
         return build_linear_path(key_frames, path_step);
-    case cubic:
-        return build_cubic_path(key_frames, path_step);
+    //case cubic:
+    //    return build_cubic_path(key_frames, path_step);
     }
 }
 
-const std::vector<camera_t> key_frames =
-{ { glm::vec3(0.f, 5.f, 0.f), glm::vec3(0.f, 0.f, -4.f), glm::vec3(0.f, 1.f, 0.f) }
-, { glm::vec3(3.f, 9.f, 0.f), glm::vec3(4.f, 0.f, -4.f), glm::vec3(0.f, 1.f, 0.f) }
-, { glm::vec3(10.f, 1.f, 0.f), glm::vec3(8.f, 0.f, -4.f), glm::vec3(0.f, 1.f, 0.f) }
+const std::vector<key_frame_t> key_frames =
+{ { glm::vec3(0.f, 5.f, 0.f), glm::vec3(0.f, 0.f, -4.f), glm::vec3(0.f, -1.f, 0.f) }
+, { glm::vec3(3.f, 9.f, 0.f), glm::vec3(4.f, 0.f, -4.f), glm::vec3(0.f, -1.f, 0.f) }
+, { glm::vec3(10.f, 1.f, 0.f), glm::vec3(8.f, 0.f, -4.f), glm::vec3(0.f, -1.f, 0.f) }
 
-, { glm::vec3(8.f, 8.f, 0.f), glm::vec3(3.f, 0.f, 0.f), glm::vec3(0.f, 1.f, 0.f) }
+, { glm::vec3(8.f, 8.f, 0.f), glm::vec3(3.f, 0.f, 0.f), glm::vec3(0.f, -1.f, 0.f) }
 
-, { glm::vec3(8.f, 8.f, 0.f), glm::vec3(8.f, 0.f, 4.f), glm::vec3(0.f, 1.f, 0.f) }
-, { glm::vec3(6.f, -3.f, 0.f), glm::vec3(4.f, 0.f, 4.f), glm::vec3(0.f, 1.f, 0.f) }
-, { glm::vec3(-3.f, 8.f, 0.f), glm::vec3(0.f, 0.f, 4.f), glm::vec3(0.f, 1.f, 0.f) }
+, { glm::vec3(8.f, 8.f, 0.f), glm::vec3(8.f, 0.f, 4.f), glm::vec3(0.f, -1.f, 0.f) }
+, { glm::vec3(6.f, -3.f, 0.f), glm::vec3(4.f, 0.f, 4.f), glm::vec3(0.f, -1.f, 0.f) }
+, { glm::vec3(-3.f, 8.f, 0.f), glm::vec3(0.f, 0.f, 4.f), glm::vec3(0.f, -1.f, 0.f) }
 
-, { glm::vec3(0.f, 8.f, 0.f), glm::vec3(3.f, 0.f, 0.f), glm::vec3(0.f, 1.f, 0.f) }
-, { glm::vec3(0.f, 5.f, 0.f), glm::vec3(0.f, 0.f, -4.f), glm::vec3(0.f, 1.f, 0.f) } };
+, { glm::vec3(0.f, 8.f, 0.f), glm::vec3(3.f, 0.f, 0.f), glm::vec3(0.f, -1.f, 0.f) }
+, { glm::vec3(0.f, 5.f, 0.f), glm::vec3(0.f, 0.f, -4.f), glm::vec3(0.f, -1.f, 0.f) } };
 
-const intertolation_type type = cubic;
+const intertolation_type type = linear;
 const size_t path_step = 200;
-const std::vector<camera_t> path = build_path(type, key_frames, path_step);
+path_t path = build_path(type, key_frames, path_step);
 size_t step = 0;
 
 size_t key_step = 0;
@@ -103,23 +92,22 @@ void display(void)
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-    glLoadIdentity();
-
-    gluLookAt
-        (path[step].eye.x, path[step].eye.y, path[step].eye.z
-        , path[step].centre.x, path[step].centre.y, path[step].centre.z
-        , path[step].up.x, path[step].up.y, path[step].up.z);
-    if (step < key_step)
-        ++step;
-    if (step >= path.size())
-    {
-        step = 0;
-        key_step = 0;
-    }
-
     for (size_t i = 0; i < objects.size(); ++i)
     {
         draw_object(objects[i], colors[i]);
+    }
+
+    //glMatrixMode(GL_PROJECTION);
+    //glLoadMatrixf(path.proj_matrix[0].data);
+    //glMatrixMode(GL_MODELVIEW);
+    glLoadMatrixf(path.view_matrix[step][0].data);
+
+    if (step < key_step)
+        ++step;
+    if (step >= path.view_matrix.size())
+    {
+        step = 0;
+        key_step = 0;
     }
 
     glutSwapBuffers();
@@ -136,8 +124,11 @@ void resize(int width, int height)
 {
     const float ar = (float)width / (float)height;
 
+    //path.proj_matrix = perspective(90.f, ar, 1.f, 20.f);
+
     glViewport(0, 0, width, height);
     glMatrixMode(GL_PROJECTION);
+    //glLoadMatrixf(path.proj_matrix[0].data);
     glLoadIdentity();
     glFrustum(-ar, ar, -1.0, 1.0, 2.0, 100.0);
 
