@@ -83,9 +83,8 @@
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="cubic.h" />
-    <ClInclude Include="key_frame.h" />
-    <ClInclude Include="path.h" />
+    <ClInclude Include="interpolation.h" />
+    <ClInclude Include="camera.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
   </ItemGroup>

@@ -10,9 +10,9 @@ glm::mat4 lerp(const glm::mat4& n, const glm::mat4& n1, const float diff)
 
 namespace
 {
-    void extract_exis_angle(glm::mat4 const & mat, glm::vec3 & axis, float & angle);
-    glm::mat4 axis_angle_matrix(glm::vec3 const & axis, float const angle);
-    glm::mat4 extract_matrix_rotation(glm::mat4 const & mat);
+    void extract_exis_angle(const glm::mat4& mat, glm::vec3& axis, float& angle);
+    glm::mat4 axis_angle_matrix(const glm::vec3& axis, const float angle);
+    glm::mat4 extract_matrix_rotation(const glm::mat4& mat);
 }
 
 glm::mat4 slerp(const glm::mat4& n, const glm::mat4& n1, const float diff)
@@ -56,16 +56,16 @@ namespace
 
     glm::mat4 axis_angle_matrix(const glm::vec3& axis, const float angle)
     {
+        const glm::vec3 temp_axis = glm::normalize(axis);
+        float x = temp_axis.x;
+        float y = temp_axis.y;
+        float z = temp_axis.z;
         float c = cos(angle);
         float s = sin(angle);
-        float t = 1.f - c;
-        glm::vec3 n = normalize(axis);
-
-        return glm::mat4(
-            t * n.x * n.x + c, t * n.x * n.y + n.z * s, t * n.x * n.z - n.y * s, 0.f,
-            t * n.x * n.y - n.z * s, t * n.y * n.y + c, t * n.y * n.z + n.x * s, 0.f,
-            t * n.x * n.z + n.y * s, t * n.y * n.z - n.x * s, t * n.z * n.z + c, 0.f,
-            0.f, 0.f, 0.f, 1.f
-            );
+        return glm::mat4
+            ( c + (1 - c)*x*x, (1 - c)*x*y + s*z, (1 - c)*x*z - s*y, 0.f
+            , (1 - c)*x*y - s*z, c + (1 - c)*y*y, (1 - c)*y*z + s*x, 0.f
+            , (1 - c)*x*z + s*y, (1 - c)*y*z - s*x, c + (1 - c)*z*z, 0.f
+            , 0.f, 0.f, 0.f, 1.f);
     }
 }
