@@ -14,6 +14,7 @@
     <ProjectGuid>{985ACC9C-7858-410E-8950-D53D64284316}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>vostok_test_camera</RootNamespace>
+    <ProjectName>gl_camera_animator</ProjectName>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
@@ -79,9 +80,6 @@
       <OptimizeReferences>true</OptimizeReferences>
     </Link>
   </ItemDefinitionGroup>
-  <ItemGroup>
-    <Text Include="ReadMe.txt" />
-  </ItemGroup>
   <ItemGroup>
     <ClInclude Include="interpolation.h" />
     <ClInclude Include="camera.h" />
